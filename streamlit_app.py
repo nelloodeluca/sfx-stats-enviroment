@@ -13,7 +13,7 @@ st.set_page_config(
 # Declare some useful functions.
 
 @st.cache_data
-def get_gdp_data():
+def get_sfx_data():
     """Grab GDP data from a CSV file.
 
     This uses caching to avoid having to read the file every time. If we were
@@ -22,7 +22,7 @@ def get_gdp_data():
     """
 
     # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
-    DATA_FILENAME = Path(__file__).parent/'data/gdp_data.csv'
+    DATA_FILENAME = Path(__file__).parent/'data/sfx_data.csv'
     raw_gdp_df = pd.read_csv(DATA_FILENAME)
 
     MIN_YEAR = 1960
@@ -57,7 +57,7 @@ def get_gdp_data():
 
     return gdp_df
 
-gdp_df = get_gdp_data()
+sfx_df = get_sfx_data()
 
 # -----------------------------------------------------------------------------
 # Draw the actual page
@@ -75,8 +75,8 @@ But it's otherwise a great (and did I mention _free_?) source of data.
 ''
 ''
 
-min_value = gdp_df['Year'].min()
-max_value = gdp_df['Year'].max()
+min_value = sfx_df['Year'].min()
+max_value = sfx_df['Year'].max()
 
 from_year, to_year = st.slider(
     'Which years are you interested in?',

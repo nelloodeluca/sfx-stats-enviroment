@@ -19,16 +19,16 @@ def process_gain(gain_str):
     else:
         return gain_str
 
-# Funzione per elaborare il campo "StopLoss" e "Date"
+# Funzione per elaborare il campo "StopLoss" e la data
 def process_stoploss_and_date(line):
     """
     La riga è del tipo:
       "<status>   <MonthName> <DD>"
     Ad esempio: "stop-loss	February 10" oppure "won	February 04"
     La funzione:
-      - Estrae lo status (il primo elemento: "stop-loss" o "won")
+      - Estrae lo status (ad es. "stop-loss" o "won")
       - Estrae la data (i restanti elementi) e la converte nel formato YYYY-MM-DD,
-        usando l'anno corrente.
+        usando l’anno corrente.
     """
     parts = line.split()
     if len(parts) < 2:
@@ -50,6 +50,19 @@ def process_stoploss_and_date(line):
         
     return status, date_formatted
 
+# Funzione per convertire l'orario in formato 12 ore (AM/PM) al formato 24 ore (HH:MM:SS)
+def process_time(time_str):
+    """
+    Converte un orario in formato "hh:mm:ss AM/PM" nel formato "HH:MM:SS" (24 ore).
+    Ad esempio: "12:22:02 AM" -> "00:22:02"
+    """
+    try:
+        dt_obj = datetime.strptime(time_str, "%I:%M:%S %p")
+        return dt_obj.strftime("%H:%M:%S")
+    except ValueError as e:
+        print("Errore nel parsing dell'orario:", e)
+        return time_str
+
 # Funzione per elaborare un record composto da 5 righe
 def process_record(lines):
     if len(lines) < 5:
@@ -58,7 +71,8 @@ def process_record(lines):
     action = lines[1].strip()
     gain = process_gain(lines[2].strip())
     stop_loss, date_formatted = process_stoploss_and_date(lines[3].strip())
-    time_field = lines[4].strip()
+    # Processa l'orario e lo converte nel formato 24 ore
+    time_field = process_time(lines[4].strip())
     
     return {
         "Symbol": symbol,
@@ -70,106 +84,16 @@ def process_record(lines):
     }
 
 # Data set fornito come stringa multilinea
-data_set = """EUR/CAD
+data_set = """XAU/USD
 buy
--15 PIPS
-stop-loss	February 10
-02:36:27 PM
-GBP/CAD
-buy
--15 PIPS
-stop-loss	February 10
-01:07:20 PM
-EUR/USD
-buy
--15 PIPS
-stop-loss	February 10
-01:04:49 PM
-EUR/JPY
-buy
--15 PIPS
-stop-loss	February 05
-09:15:45 AM
-EUR/CAD
-buy
--15 PIPS
-stop-loss	February 05
-08:48:18 AM
-EUR/USD
-buy
--15 PIPS
-stop-loss	February 05
-08:39:08 AM
-USD/CAD
-sell
--15 PIPS
-stop-loss	February 04
-09:02:27 AM
-GBP/USD
-buy
-75 PIPS
+100 PIPS
 won	February 04
-08:10:01 AM
-EUR/USD
+12:22:02 AM
+XAU/USD
 buy
-75 PIPS
-won	February 04
-08:04:33 AM
-EUR/CHF
-sell
-15 PIPS
-won	February 03
-09:27:12 AM
-GBP/CAD
-sell
--15 PIPS
-stop-loss	February 03
-08:55:30 AM
-EUR/USD
-sell
-15 PIPS
-won	February 03
-08:52:57 AM
-EUR/CAD
-buy
-75 PIPS
-won	January 14
-09:22:38 AM
-EUR/USD
-buy
-75 PIPS
-won	January 14
-08:16:42 AM
-EUR/JPY
-buy
--30 PIPS
-stop-loss	January 14
-12:12:00 AM
-GBP/CAD
-buy
-60 PIPS
-won	January 13
-05:35:07 PM
-EUR/CAD
-buy
-45 PIPS
-won	January 13
-05:30:03 PM
-EUR/CAD
-sell
-75 PIPS
-won	January 10
-05:27:38 PM
-EUR/USD
-sell
-75 PIPS
-won	January 09
-04:50:38 PM
-GBP/CAD
-sell
--30 PIPS
-stop-loss	January 09
-04:48:05 PM
+20 PIPS
+won	January 29
+12:14:54 AM
 """
 
 # Suddivide il testo in righe, rimuovendo eventuali righe vuote
