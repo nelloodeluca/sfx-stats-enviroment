@@ -1,6 +1,6 @@
 # Ignora i file di segreti
 .streamlit/secrets.toml
-.data/
+#.data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
