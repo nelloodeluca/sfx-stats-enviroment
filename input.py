@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 from pathlib import Path
+import time
+import numpy as np
 from script.parse_data import parse_run
 
 # Seleziona l'anno tramite una selectbox
@@ -19,11 +21,11 @@ if submit:
         st.error('Non hai scritto niente!')
     else:
         # Aggiorna il CSV
-        parse_run(sentence, fornitore)
-        st.success('Trade aggiunti!')
+        log = parse_run(sentence, anno, fornitore)
+        st.success(log)
 
 # Visulalizza Dati CSV --------------------------------
-st.title("Visualizzazione Dati CSV")
+st.title("Visualizzazione Dati")
 
 # Definisci il percorso al file CSV
 data_path = Path("data/sfx_data.csv")
@@ -33,7 +35,9 @@ if data_path.exists():
     # Leggi il CSV in un DataFrame
     df = pd.read_csv(data_path)
     st.write("Dati dal CSV:")
-    st.dataframe(df, key="my_data")
+    st.dataframe(df, key="my_data", width=1920)
 else:
     st.error(f"Il file CSV non è stato trovato: {data_path}")
+
+
 

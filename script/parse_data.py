@@ -10,8 +10,8 @@ def process_gain(gain_str):
     match = re.search(r'(-?\d+)', gain_str)
     return int(match.group(1)) if match else gain_str
 
-# Funzione per elaborare il campo "StopLoss" e la data
-def process_stoploss_and_date(line):
+# Funzione per elaborare il campo "StopLoss" e la data, utilizzando l'anno fornito
+def process_stoploss_and_date(line, anno):
     parts = line.split()
     if len(parts) < 2:
         status = ""
@@ -20,8 +20,7 @@ def process_stoploss_and_date(line):
         status = parts[0].strip()              # ad es. "stop-loss" o "won"
         date_str = " ".join(parts[1:]).strip()  # ad es. "January 10"
     try:
-        current_year = datetime.now().year
-        parsed_date = datetime.strptime(f"{date_str} {current_year}", "%B %d %Y")
+        parsed_date = datetime.strptime(f"{date_str} {anno}", "%B %d %Y")
         date_formatted = parsed_date.strftime("%Y-%m-%d")
     except ValueError:
         print(f"Errore nel parsing della data: '{date_str}'")
@@ -37,14 +36,14 @@ def process_time(time_str):
         print("Errore nel parsing dell'orario:", e)
         return time_str
 
-# Funzione per elaborare un singolo record composto da 5 "righe"
-def process_record(lines):
+# Funzione per elaborare un singolo record composto da 5 "righe", utilizzando l'anno fornito
+def process_record(lines, anno):
     if len(lines) < 5:
         return None
     symbol = lines[0].strip()
     action = lines[1].strip()
     gain = process_gain(lines[2].strip())
-    stop_loss, date_formatted = process_stoploss_and_date(lines[3].strip())
+    stop_loss, date_formatted = process_stoploss_and_date(lines[3].strip(), anno)
     time_field = process_time(lines[4].strip())
     return {
         "Symbol": symbol,
@@ -55,42 +54,39 @@ def process_record(lines):
         "Time": time_field
     }
 
-# Funzione per effettuare il parsing dell'intero dataset
-def parse_data(data_set):
+# Funzione per effettuare il parsing dell'intero dataset, ora accetta anche il parametro anno
+def parse_data(data_set, anno):
     """
     Se il data_set contiene newline, utilizza il metodo classico (ogni record su 5 righe).
     Altrimenti, assume che il data_set sia una singola riga con token separati da spazi,
     e che ogni record sia composto da 9 token.
     """
     data_set = data_set.strip()
-    # Se troviamo almeno una newline, utilizziamo il metodo tradizionale.
     if "\n" in data_set:
         lines = [line for line in data_set.splitlines() if line.strip() != ""]
         records = []
         record_size = 5
         for i in range(0, len(lines), record_size):
             record_lines = lines[i:i+record_size]
-            record = process_record(record_lines)
+            record = process_record(record_lines, anno)
             if record:
                 records.append(record)
         return records
     else:
         # Input su una sola riga: suddividi in token
         tokens = data_set.split()
-        # Ogni record deve avere 9 token
         if len(tokens) % 9 != 0:
             raise ValueError("Il numero di token nell'input non è multiplo di 9. Totale token: {}".format(len(tokens)))
         records = []
         for i in range(0, len(tokens), 9):
             rec_tokens = tokens[i:i+9]
-            # Ricostruisci le "righe" del record
-            line1 = rec_tokens[0]  # Symbol
-            line2 = rec_tokens[1]  # Action
-            line3 = rec_tokens[2] + " " + rec_tokens[3]  # Gain (es. "75 PIPS")
+            line1 = rec_tokens[0]                           # Symbol
+            line2 = rec_tokens[1]                           # Action
+            line3 = rec_tokens[2] + " " + rec_tokens[3]       # Gain (es. "75 PIPS")
             line4 = rec_tokens[4] + " " + rec_tokens[5] + " " + rec_tokens[6]  # StopLoss e Date (es. "won January 10")
-            line5 = rec_tokens[7] + " " + rec_tokens[8]  # Time (es. "05:27:38 PM")
+            line5 = rec_tokens[7] + " " + rec_tokens[8]       # Time (es. "05:27:38 PM")
             record_lines = [line1, line2, line3, line4, line5]
-            record = process_record(record_lines)
+            record = process_record(record_lines, anno)
             if record:
                 records.append(record)
         return records
@@ -124,25 +120,34 @@ def remove_duplicates(records):
             unique.append(record)
     return unique
 
-# Funzione principale che elabora l'input e aggiorna il CSV
-def parse_run(data_input, fornitore):
-    # Elabora i nuovi record
-    new_records = parse_data(data_input)
+# Funzione principale che elabora l'input, aggiunge l'anno e aggiorna il CSV
+def parse_run(data_input, anno, fornitore):
+    # Elabora i nuovi record, passando l'anno specificato
+    new_records = parse_data(data_input, anno)
     for record in new_records:
         record["Fornitore"] = fornitore
 
     output_file = "data/sfx_data.csv"
     existing_records = []
-    # Se il file CSV esiste già, carica i record esistenti
     if Path(output_file).exists():
         with open(output_file, "r", newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 existing_records.append(row)
 
-    # Unisci i record esistenti con quelli nuovi e rimuovi i duplicati
     all_records = existing_records + new_records
     unique_records = remove_duplicates(all_records)
-
-    # Scrivi l'insieme aggiornato nel file CSV
     write_csv(unique_records, output_file)
+    
+    # Se ci sono nuovi record, determina l'orario minimo e massimo
+    if new_records:
+        # Assumiamo che il campo "Date" sia nel formato "HH:MM:SS" (zero-padded)
+        date = [record["Date"] for record in new_records]
+        earliest = min(date)
+        latest = max(date)
+        msg = f"Trade dal {earliest} al {latest} aggiunti con successo!"
+    else:
+        msg = "Nessun trade aggiunto."
+
+    print(msg)
+    return msg

@@ -16,20 +16,29 @@ def logout():
 
 login_page = st.Page(login, title="Log in", icon=":material/login:")
 logout_page = st.Page(logout, title="Log out", icon=":material/logout:")
+admin_input = st.Page("input.py", title="Aggiungi Dati", icon=":material/thumb_up:")
 
-home = st.Page(
-    "home.py", title="a", icon=":material/dashboard:", default=True
+dashboard = st.Page(
+    "home.py", title="Dashboard", icon=":material/dashboard:", default=True
 )
+
+st.logo("images/logo_ndl.png", icon_image="images/logo_ndl.png")
+
+page_dict = {}
 
 if st.session_state.logged_in:
     pg = st.navigation(
         {
-            "Dashbaord": [home],
-            "Account": [logout_page],
-        }
+            "Dashbaord": [dashboard],
+            "Account": [logout_page, admin_input],
+        } | page_dict
     )
 else:
     pg = st.navigation(
-        [home, login_page])
+        {
+            "Dashbaord": [dashboard],
+            "Account": [login_page],
+        }
+    )
 
 pg.run()
