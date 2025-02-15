@@ -151,3 +151,5 @@ def parse_run(data_input, anno, fornitore):
 
     print(msg)
     return msg
+
+# GESTIRE IL CASO DELL'ORDINE CANCELLATO
