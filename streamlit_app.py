@@ -1,61 +1,35 @@
 import streamlit as st
 import pandas as pd
 
-from pathlib import Path
-from script.parse_data import parse_run
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
 
-# Seleziona l'anno tramite una selectbox
-anno = st.selectbox('Che anno stai inserendo?', ['2025', '2024'])
-# Seleziona il fornitore tramite una selectbox
-fornitore = st.selectbox('Chi è il fornitore?', ['LunarEclipse-LKS', 'ReyNova-RYD'])
+def login():
+    if st.button("Log in"):
+        st.session_state.logged_in = True
+        st.rerun()
 
+def logout():
+    if st.button("Log out"):
+        st.session_state.logged_in = False
+        st.rerun()
 
-# Crea il form per l'input dei dati
-with st.form(key='input_data', clear_on_submit=True):
-    sentence = st.text_input('I trade da inserire', '')
-    submit = st.form_submit_button(f'Aggiungi i trade per {fornitore}!')
+login_page = st.Page(login, title="Log in", icon=":material/login:")
+logout_page = st.Page(logout, title="Log out", icon=":material/logout:")
 
-if submit:
-    if not sentence.strip():
-        st.error('Non hai scritto niente!')
-    else:
-        # Aggiorna il CSV
-        parse_run(sentence, fornitore)
-        st.success('Trade aggiunti!')
+home = st.Page(
+    "home.py", title="a", icon=":material/dashboard:", default=True
+)
 
-# Visulalizza Dati CSV --------------------------------
-st.title("Visualizzazione Dati CSV")
-
-# Definisci il percorso al file CSV
-data_path = Path("data/sfx_data.csv")
-
-# Controlla se il file esiste
-if data_path.exists():
-    # Leggi il CSV in un DataFrame
-    df = pd.read_csv(data_path)
-    st.write("Dati dal CSV:")
-    st.dataframe(df, key="my_data")
+if st.session_state.logged_in:
+    pg = st.navigation(
+        {
+            "Dashbaord": [home],
+            "Account": [logout_page],
+        }
+    )
 else:
-    st.error(f"Il file CSV non è stato trovato: {data_path}")
+    pg = st.navigation(
+        [home, login_page])
 
-
-# Sidebar per la navigazione tra pagine
-#pagina = st.sidebar.selectbox("Seleziona la pagina", ["Dashboard", "Inserimento dati (Admin)"])
-
-#if pagina == "Dashboard":
-    #st.title("Dashboard")
-    #st.write("Benvenuto nella dashboard!")
-    # Qui inserisci il codice per visualizzare i dati, grafici, statistiche, ecc.
-    
-#elif pagina == "Inserimento dati (Admin)":
-    #st.title("Inserimento dati (Admin)")
-    
-    # Implementa un semplice sistema di login per l'admin
-    #password = st.text_input("Inserisci la password admin", type="password")
-    #if st.button("Accedi"):
-        #if password == "sgmello":  # Sostituisci con il metodo di autenticazione desiderato
-            #st.success("Accesso consentito!")
-            #import input
-        #else:
-          #  st.error("Password errata!")
-
+pg.run()
